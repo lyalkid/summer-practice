@@ -4,7 +4,7 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, Callb
 from transformers import pipeline
 
 # Замените 'YOUR_API_TOKEN' на ваш токен API, полученный от BotFather
-API_TOKEN = 'YOUR_API_TOKEN'
+API_TOKEN = '6443339704:AAHdiXXhN-gl5kv5Byxc3WarDwEhYShFDdQ'
 
 # Установим пайплайны для задач
 classifier = pipeline('sentiment-analysis')
