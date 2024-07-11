@@ -1,60 +1,55 @@
-import logging
-from telegram import Update, Bot
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
+import telebot
 from transformers import pipeline
 
 # Замените 'YOUR_API_TOKEN' на ваш токен API, полученный от BotFather
-API_TOKEN = '6443339704:AAHdiXXhN-gl5kv5Byxc3WarDwEhYShFDdQ'
 
-# Установим пайплайны для задач
+API_TOKEN = '6443339704:AAHdiXXhN-gl5kv5Byxc3WarDwEhYShFDdQ'
+bot = telebot.TeleBot(API_TOKEN)
+
+# Создаем пайплайны для задач
 classifier = pipeline('sentiment-analysis')
 generator = pipeline('text-generation', model='gpt2')
 translator = pipeline('translation_en_to_fr')
 
-# Настраиваем логирование
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
-)
-logger = logging.getLogger(__name__)
+# Команда /start
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
+    bot.reply_to(message, "Привет! Я бот, который может классифицировать текст, генерировать текст и переводить текст. Используйте команды /classify, /generate или /translate.")
 
-# Функции для обработки команд
-def start(update: Update, context: CallbackContext) -> None:
-    update.message.reply_text('Привет! Я бот, который может классифицировать текст, генерировать текст и переводить текст. Используйте команды /classify, /generate или /translate.')
+# Команда /help
+@bot.message_handler(commands=['help'])
+def send_help(message):
+    bot.reply_to(message, "Помощь: используйте команды /classify <текст>, /generate <текст> или /translate <текст>.")
 
-def help_command(update: Update, context: CallbackContext) -> None:
-    update.message.reply_text('Помощь: используйте команды /classify <текст>, /generate <текст> или /translate <текст>.')
+# Команда /classify
+@bot.message_handler(commands=['classify'])
+def classify_text(message):
+    text = message.text[len('/classify '):].strip()
+    if text:
+        result = classifier(text)
+        bot.reply_to(message, result[0]['label'])
+    else:
+        bot.reply_to(message, "Пожалуйста, предоставьте текст для классификации.")
 
-def classify_text(update: Update, context: CallbackContext) -> None:
-    text = ' '.join(context.args)
-    result = classifier(text)
-    update.message.reply_text(result[0]['label'])
+# Команда /generate
+@bot.message_handler(commands=['generate'])
+def generate_text(message):
+    text = message.text[len('/generate '):].strip()
+    if text:
+        result = generator(text, max_length=50)
+        bot.reply_to(message, result[0]['generated_text'])
+    else:
+        bot.reply_to(message, "Пожалуйста, предоставьте текст для генерации.")
 
-def generate_text(update: Update, context: CallbackContext) -> None:
-    text = ' '.join(context.args)
-    result = generator(text, max_length=50)
-    update.message.reply_text(result[0]['generated_text'])
+# Команда /translate
+@bot.message_handler(commands=['translate'])
+def translate_text(message):
+    text = message.text[len('/translate '):].strip()
+    if text:
+        result = translator(text)
+        bot.reply_to(message, result[0]['translation_text'])
+    else:
+        bot.reply_to(message, "Пожалуйста, предоставьте текст для перевода.")
 
-def translate_text(update: Update, context: CallbackContext) -> None:
-    text = ' '.join(context.args)
-    result = translator(text)
-    update.message.reply_text(result[0]['translation_text'])
-
-def main() -> None:
-    updater = Updater(API_TOKEN)
-    
-    dispatcher = updater.dispatcher
-
-    # Обработчики команд
-    dispatcher.add_handler(CommandHandler("start", start))
-    dispatcher.add_handler(CommandHandler("help", help_command))
-    dispatcher.add_handler(CommandHandler("classify", classify_text))
-    dispatcher.add_handler(CommandHandler("generate", generate_text))
-    dispatcher.add_handler(CommandHandler("translate", translate_text))
-
-    # Запуск бота
-    updater.start_polling()
-
-    updater.idle()
-
-if __name__ == '__main__':
-    main()
+# Запуск бота
+bot.polling()
